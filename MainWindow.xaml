@@ -4,7 +4,7 @@
         Title="iPrinterTool"
         Width="900"
         Height="560"
-        >
+        WindowStartupLocation="CenterScreen">
         <TabControl Margin="8">
 
                 <TabItem Header="Paper">

@@ -13,21 +13,21 @@
     <ApplicationIcon>Assets\bee.ico</ApplicationIcon>
 
     <!-- 32-bit -->
-    <!-- <RuntimeIdentifier>win-x86</RuntimeIdentifier> -->
-    <!-- <PlatformTarget>x86</PlatformTarget> -->
+    <RuntimeIdentifier>win-x86</RuntimeIdentifier>
+    <PlatformTarget>x86</PlatformTarget>
 
     <!-- Single EXE -->
-    <!-- <SelfContained>true</SelfContained> -->
-    <!-- <PublishSingleFile>true</PublishSingleFile> -->
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
 
     <!-- Bundle native libraries -->
-    <!-- <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract> -->
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
 
     <!-- Compression -->
-    <!-- <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile> -->
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
 
     <!-- Compatibility -->
-    <!-- <PublishTrimmed>false</PublishTrimmed> -->
+    <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
 
   <ItemGroup>
