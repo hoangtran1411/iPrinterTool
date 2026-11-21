@@ -5,6 +5,7 @@ namespace iPrinterTool.Services;
 
 public sealed class CanonSession
 {
+    private readonly SemaphoreSlim _loginLock = new(1, 1);
     private readonly CookieContainer _cookies = new();
     private bool _loggedIn;
 
@@ -33,27 +34,34 @@ public sealed class CanonSession
     {
         if (_loggedIn) return;
 
-        var body = new Dictionary<string, string>
+        await _loginLock.WaitAsync(ct);
+        try
         {
-            ["i0017"] = "2",   // General User Mode
-            ["i0019"] = ""     // User Name: để trống
-        };
+            if (_loggedIn) return;
 
-        using var req = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}/checkLogin.cgi")
-        {
-            Content = new FormUrlEncodedContent(body)
-        };
-        req.Headers.Referrer = new Uri($"{BaseUrl}/");
+            var body = new Dictionary<string, string>
+            {
+                ["i0017"] = "2",   // General User Mode
+                ["i0019"] = ""     // User Name: để trống
+            };
 
-        using var resp = await Http.SendAsync(req, ct);
-        resp.EnsureSuccessStatusCode();
+            using var req = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}/checkLogin.cgi")
+            {
+                Content = new FormUrlEncodedContent(body)
+            };
+            req.Headers.Referrer = new Uri($"{BaseUrl}/");
 
-        var hasSession = _cookies.GetCookies(new Uri(BaseUrl)).Cast<Cookie>().Any(c => c.Name == "sessid");
-        if (!hasSession)
-            throw new InvalidOperationException(
-                $"Đăng nhập không nhận được sessid. URL cuối: {resp.RequestMessage?.RequestUri}");
+            using var resp = await Http.SendAsync(req, ct);
+            resp.EnsureSuccessStatusCode();
 
-        _loggedIn = true;
+            var hasSession = _cookies.GetCookies(new Uri(BaseUrl)).Cast<Cookie>().Any(c => c.Name == "sessid");
+            if (!hasSession)
+                throw new InvalidOperationException(
+                    $"Đăng nhập không nhận được sessid. URL cuối: {resp.RequestMessage?.RequestUri}");
+
+            _loggedIn = true;
+        }
+        finally { _loginLock.Release(); }
     }
 
     public void Invalidate() => _loggedIn = false;

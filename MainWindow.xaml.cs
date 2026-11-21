@@ -11,6 +11,10 @@ public partial class MainWindow : Window
 
         var vm = new MainViewModel();
         DataContext = vm;
-        Loaded += (_, _) => vm.RefreshCommand.Execute(null);
+        Loaded += (_, _) =>
+        {
+            vm.RefreshCommand.Execute(null);
+            vm.JobLog.Start();
+        };
     }
 }

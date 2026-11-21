@@ -7,12 +7,14 @@ namespace iPrinterTool.ViewModels;
 public partial class MainViewModel : ObservableObject
 {
     private readonly CanonPaperClient _client;
-    private readonly CanonJobLogClient _jobLog;
+
+    public JobLogViewModel JobLog { get; }
+
     public MainViewModel()
     {
         var session = new CanonSession("10.90.39.20");
         _client = new CanonPaperClient(session);
-        _jobLog = new CanonJobLogClient(session);
+        JobLog = new JobLogViewModel(new JobLogService(new CanonJobLogClient(session)));
     }
 
     [ObservableProperty] private string _mpSize = "...";
@@ -20,7 +22,7 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _mpButtonText = "Switch";
     [ObservableProperty] private string _drawerButtonText = "Switch";
     [ObservableProperty] private string _status = "";
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(RefreshCommand), nameof(ToggleMpCommand), nameof(ToggleDrawerCommand), nameof(TestJobLogCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(RefreshCommand), nameof(ToggleMpCommand), nameof(ToggleDrawerCommand))]
     private bool _isBusy;
 
     private bool CanRun() => !IsBusy;
@@ -50,18 +52,4 @@ public partial class MainViewModel : ObservableObject
 
     [RelayCommand(CanExecute = nameof(CanRun))]
     private Task ToggleDrawerAsync() => RunAsync(() => _client.ToggleAsync(Tray.Drawer1));
-    [RelayCommand(CanExecute = nameof(CanRun))]
-    private async Task TestJobLogAsync()
-    {
-        IsBusy = true;
-        Status = "";
-        try
-        {
-            var jobs = await _jobLog.GetJobLogAsync();
-            Status = $"{jobs.Count} jobs. Mới nhất: " + string.Join(" | ",
-                jobs.Take(3).Select(j => $"{j.JobNumber} {j.UserName} {j.OutputPages}p {j.Start:dd/MM HH:mm}"));
-        }
-        catch (Exception ex) { Status = ex.Message; }
-        finally { IsBusy = false; }
-    }
 }
