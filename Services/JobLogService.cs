@@ -81,4 +81,40 @@ public sealed class JobLogService
             .Select(g => new UserStat(g.Key, g.Count(), g.Sum(j => j.OutputPages)))
             .ToListAsync(ct);
     }
+    public async Task RecordPaperOutAsync(CancellationToken ct = default)
+    {
+        await using var db = new PrintLogDb();
+        var now = DateTime.Now;
+        var from = now.AddHours(-3);
+
+        var last = await db.Jobs
+            .Where(j => j.JobType == "Printer")
+            .OrderByDescending(j => j.Start)
+            .FirstOrDefaultAsync(ct);
+
+        var top = await db.Jobs
+            .Where(j => j.JobType == "Printer" && j.Start >= from)
+            .GroupBy(j => j.UserName)
+            .Select(g => new { User = g.Key, Pages = g.Sum(j => j.OutputPages) })
+            .OrderByDescending(x => x.Pages)
+            .FirstOrDefaultAsync(ct);
+
+        db.PaperEvents.Add(new PaperEvent
+        {
+            Time = now,
+            LastUser = last?.UserName ?? "",
+            LastFile = last?.FileName ?? "",
+            LastPages = last?.OutputPages ?? 0,
+            LastStart = last?.Start ?? default,
+            TopUser3h = top?.User ?? "",
+            TopPages3h = top?.Pages ?? 0
+        });
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<List<PaperEvent>> GetPaperEventsAsync(int take = 50, CancellationToken ct = default)
+    {
+        await using var db = new PrintLogDb();
+        return await db.PaperEvents.OrderByDescending(e => e.Time).Take(take).ToListAsync(ct);
+    }
 }

@@ -8,11 +8,32 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>iPrinterTool</AssemblyName>
     <Product>iPrinterTool</Product>
+
+    <!-- Application Icon -->
+    <ApplicationIcon>Assets\bee.ico</ApplicationIcon>
+
+    <!-- 32-bit -->
+    <!-- <RuntimeIdentifier>win-x86</RuntimeIdentifier> -->
+    <!-- <PlatformTarget>x86</PlatformTarget> -->
+
+    <!-- Single EXE -->
+    <!-- <SelfContained>true</SelfContained> -->
+    <!-- <PublishSingleFile>true</PublishSingleFile> -->
+
+    <!-- Bundle native libraries -->
+    <!-- <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract> -->
+
+    <!-- Compression -->
+    <!-- <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile> -->
+
+    <!-- Compatibility -->
+    <!-- <PublishTrimmed>false</PublishTrimmed> -->
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="AngleSharp" Version="1.10.5" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Lextm.SharpSnmpLib" Version="12.5.7" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.*">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

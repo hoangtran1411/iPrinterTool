@@ -6,6 +6,7 @@ namespace iPrinterTool.Data;
 public class PrintLogDb : DbContext
 {
     public DbSet<JobRecord> Jobs => Set<JobRecord>();
+    public DbSet<PaperEvent> PaperEvents => Set<PaperEvent>();
 
     public static string DbPath { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

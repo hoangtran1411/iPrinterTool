@@ -12,9 +12,13 @@ public partial class MainViewModel : ObservableObject
 
     public MainViewModel()
     {
-        var session = new CanonSession("10.90.39.20");
+        const string ip = "10.90.39.20";
+
+        var session = new CanonSession(ip);
         _client = new CanonPaperClient(session);
-        JobLog = new JobLogViewModel(new JobLogService(new CanonJobLogClient(session)));
+        JobLog = new JobLogViewModel(
+            new JobLogService(new CanonJobLogClient(session)),
+            new CanonSnmpClient(ip));
     }
 
     [ObservableProperty] private string _mpSize = "...";

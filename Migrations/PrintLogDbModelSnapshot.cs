@@ -72,6 +72,41 @@ namespace iPrinterTool.Migrations
 
                     b.ToTable("Jobs");
                 });
+
+            modelBuilder.Entity("iPrinterTool.Data.PaperEvent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("LastFile")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("LastPages")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("LastStart")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastUser")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Time")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TopPages3h")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("TopUser3h")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PaperEvents");
+                });
 #pragma warning restore 612, 618
         }
     }
