@@ -83,7 +83,7 @@ public partial class JobLogViewModel : ObservableObject
             if (outNow && _wasOutOfPaper != true)
             {
                 AppLogger.Error($"Printer is OUT OF PAPER! ({desc})");
-                await SyncAndLoadAsync();            // lấy job mới nhất trước khi chụp
+                await SyncAndLoadAsync();            // Fetch latest jobs before capturing snapshot
                 await _service.RecordPaperOutAsync();
                 await LoadAsync();
                 AppLogger.Warn("Recorded paper-out snapshot event to database.");

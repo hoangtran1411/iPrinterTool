@@ -8,15 +8,15 @@ public sealed record UserStat(string UserName, int Jobs, int Pages);
 public sealed class JobLogService
 {
     private readonly CanonJobLogClient _client;
+    private readonly Func<PrintLogDb> _dbFactory;
 
-    public JobLogService(CanonJobLogClient client)
+    public JobLogService(CanonJobLogClient client, Func<PrintLogDb>? dbFactory = null)
     {
         _client = client;
-        using var db = new PrintLogDb();
-        db.Database.Migrate();
+        _dbFactory = dbFactory ?? (() => new PrintLogDb());
     }
 
-    // Đọc Job Log từ máy in, chỉ insert các job chưa có. Trả về số job mới.
+    // Read job logs from printer, only insert new jobs. Returns the number of newly added jobs.
     public async Task<int> SyncAsync(CancellationToken ct = default)
     {
         var jobs = await _client.GetJobLogAsync(ct);
@@ -24,7 +24,7 @@ public sealed class JobLogService
 
         var minStart = jobs.Min(j => j.Start);
 
-        await using var db = new PrintLogDb();
+        await using var db = _dbFactory();
         var existing = await db.Jobs
             .Where(j => j.Start >= minStart)
             .Select(j => new { j.JobNumber, j.Start })
@@ -56,13 +56,13 @@ public sealed class JobLogService
 
     public async Task<List<JobRecord>> GetRecentAsync(int take = 300, CancellationToken ct = default)
     {
-        await using var db = new PrintLogDb();
+        await using var db = _dbFactory();
         return await db.Jobs.OrderByDescending(j => j.Start).Take(take).ToListAsync(ct);
     }
 
     public async Task<JobRecord?> GetLastPrinterJobAsync(CancellationToken ct = default)
     {
-        await using var db = new PrintLogDb();
+        await using var db = _dbFactory();
         return await db.Jobs
             .Where(j => j.JobType == "Printer")
             .OrderByDescending(j => j.Start)
@@ -73,7 +73,7 @@ public sealed class JobLogService
     {
         var from = DateTime.Now.AddDays(-days);
 
-        await using var db = new PrintLogDb();
+        await using var db = _dbFactory();
         return await db.Jobs
             .Where(j => j.JobType == "Printer" && j.Start >= from)
             .GroupBy(j => j.UserName)
@@ -81,9 +81,10 @@ public sealed class JobLogService
             .Select(g => new UserStat(g.Key, g.Count(), g.Sum(j => j.OutputPages)))
             .ToListAsync(ct);
     }
+
     public async Task RecordPaperOutAsync(CancellationToken ct = default)
     {
-        await using var db = new PrintLogDb();
+        await using var db = _dbFactory();
         var now = DateTime.Now;
         var from = now.AddHours(-3);
 
@@ -114,7 +115,7 @@ public sealed class JobLogService
 
     public async Task<List<PaperEvent>> GetPaperEventsAsync(int take = 50, CancellationToken ct = default)
     {
-        await using var db = new PrintLogDb();
+        await using var db = _dbFactory();
         return await db.PaperEvents.OrderByDescending(e => e.Time).Take(take).ToListAsync(ct);
     }
 }

@@ -6,7 +6,7 @@ namespace iPrinterTool.Services;
 
 public sealed class PrinterState
 {
-    // hrPrinterDetectedErrorState (RFC 2790): bit 0 là bit cao nhất của byte đầu
+    // hrPrinterDetectedErrorState (RFC 2790): bit 0 is the most significant bit of the first byte
     private static readonly string[] Names =
     {
         "lowPaper", "noPaper", "lowToner", "noToner", "doorOpen", "jammed", "offline", "serviceRequested",

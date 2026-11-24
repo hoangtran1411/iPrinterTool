@@ -42,7 +42,7 @@ public sealed class CanonSession : IDisposable
             var body = new Dictionary<string, string>
             {
                 ["i0017"] = "2",   // General User Mode
-                ["i0019"] = ""     // User Name: để trống
+                ["i0019"] = ""     // User Name: leave empty
             };
 
             using var req = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}/checkLogin.cgi")

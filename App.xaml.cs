@@ -13,11 +13,14 @@ public partial class App : Application
 {
     protected override async void OnStartup(StartupEventArgs e)
     {
+        base.OnStartup(e);
+
         if (e.Args.Contains("--test-scanner"))
         {
             try
             {
                 Console.WriteLine("Running Scanner Self-Tests...");
+                await DatabaseInitializer.InitializeAsync();
 
                 var scanner = new PrinterScannerService();
 
@@ -194,6 +197,23 @@ public partial class App : Application
             return;
         }
 
-        base.OnStartup(e);
+        try
+        {
+            await DatabaseInitializer.InitializeAsync();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error("Fatal database initialization error", ex);
+            MessageBox.Show(
+                $"Failed to initialize database:\n{ex.Message}\n\nThe application will shut down.",
+                "Database Initialization Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            Shutdown(1);
+            return;
+        }
+
+        var mainWindow = new MainWindow();
+        mainWindow.Show();
     }
 }
