@@ -466,15 +466,18 @@
                          DataContext="{Binding JobLog}">
                     <Grid Margin="12">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="130"/>
-                            <RowDefinition Height="110"/>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/> <!-- Row 0: Top actions bar -->
+                            <RowDefinition Height="Auto"/> <!-- Row 1: Last print info -->
+                            <RowDefinition Height="Auto"/> <!-- Row 2: Stats Header & Search -->
+                            <RowDefinition Height="120"/>  <!-- Row 3: DataGrid Stats -->
+                            <RowDefinition Height="Auto"/> <!-- Row 4: PaperEvents Header & Search -->
+                            <RowDefinition Height="105"/>  <!-- Row 5: DataGrid PaperEvents -->
+                            <RowDefinition Height="Auto"/> <!-- Row 6: Jobs Header & Search -->
+                            <RowDefinition Height="*"/>    <!-- Row 7: DataGrid Jobs -->
+                            <RowDefinition Height="Auto"/> <!-- Row 8: Status -->
                         </Grid.RowDefinitions>
 
-                        <StackPanel Orientation="Horizontal">
+                        <StackPanel Orientation="Horizontal" Grid.Row="0">
                             <Button Content="Sync now"
                                     Command="{Binding SyncCommand}"
                                     Padding="8,4"/>
@@ -501,11 +504,83 @@
                             <Run Text="{Binding PrinterState, Mode=OneWay}"/>
                         </TextBlock>
 
-                        <DataGrid Grid.Row="2"
+                        <!-- Row 2: Top Users Header & Search -->
+                        <DockPanel Grid.Row="2" Margin="0,4,0,4" LastChildFill="False">
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                                <TextBlock Text="👥 Top Users" FontWeight="Bold" FontSize="12" Foreground="#333333" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding StatsSummary, StringFormat='({0})'}" FontSize="11" Foreground="#666666" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <Border DockPanel.Dock="Right"
+                                    Background="White"
+                                    BorderBrush="#D1D5DB"
+                                    BorderThickness="1"
+                                    CornerRadius="3"
+                                    Padding="6,2"
+                                    Width="210"
+                                    VerticalAlignment="Center">
+                                <DockPanel LastChildFill="True">
+                                    <TextBlock Text="🔍" FontSize="10" Foreground="#888888" VerticalAlignment="Center" Margin="0,0,4,0" DockPanel.Dock="Left"/>
+                                    <Button DockPanel.Dock="Right"
+                                            Content="✕"
+                                            Command="{Binding ClearStatsSearchCommand}"
+                                            ToolTip="Clear search"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Foreground="#888888"
+                                            Padding="3,0"
+                                            Cursor="Hand"
+                                            FontSize="10">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding StatsSearchText}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding StatsSearchText}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Grid VerticalAlignment="Center">
+                                        <TextBlock Text="Search users..."
+                                                   Foreground="#9CA3AF"
+                                                   FontSize="11"
+                                                   VerticalAlignment="Center"
+                                                   IsHitTestVisible="False">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding StatsSearchText}" Value="">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding StatsSearchText}" Value="{x:Null}">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBox Text="{Binding StatsSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                                 BorderThickness="0"
+                                                 Background="Transparent"
+                                                 Padding="0"
+                                                 FontSize="11"
+                                                 VerticalAlignment="Center"/>
+                                    </Grid>
+                                </DockPanel>
+                            </Border>
+                        </DockPanel>
+
+                        <DataGrid Grid.Row="3"
                                   ItemsSource="{Binding Stats}"
                                   AutoGenerateColumns="False"
                                   IsReadOnly="True"
-                                  Margin="0,0,0,8">
+                                  Margin="0,0,0,6">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="User"
                                                     Binding="{Binding UserName}"
@@ -519,11 +594,83 @@
                             </DataGrid.Columns>
                         </DataGrid>
 
-                        <DataGrid Grid.Row="3"
+                        <!-- Row 4: Paper Events Header & Search -->
+                        <DockPanel Grid.Row="4" Margin="0,6,0,4" LastChildFill="False">
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                                <TextBlock Text="⚠️ Paper Depletion Events" FontWeight="Bold" FontSize="12" Foreground="#333333" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding PaperEventsSummary, StringFormat='({0})'}" FontSize="11" Foreground="#666666" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <Border DockPanel.Dock="Right"
+                                    Background="White"
+                                    BorderBrush="#D1D5DB"
+                                    BorderThickness="1"
+                                    CornerRadius="3"
+                                    Padding="6,2"
+                                    Width="220"
+                                    VerticalAlignment="Center">
+                                <DockPanel LastChildFill="True">
+                                    <TextBlock Text="🔍" FontSize="10" Foreground="#888888" VerticalAlignment="Center" Margin="0,0,4,0" DockPanel.Dock="Left"/>
+                                    <Button DockPanel.Dock="Right"
+                                            Content="✕"
+                                            Command="{Binding ClearPaperEventsSearchCommand}"
+                                            ToolTip="Clear search"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Foreground="#888888"
+                                            Padding="3,0"
+                                            Cursor="Hand"
+                                            FontSize="10">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding PaperEventsSearchText}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding PaperEventsSearchText}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Grid VerticalAlignment="Center">
+                                        <TextBlock Text="Search events (user, file)..."
+                                                   Foreground="#9CA3AF"
+                                                   FontSize="11"
+                                                   VerticalAlignment="Center"
+                                                   IsHitTestVisible="False">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding PaperEventsSearchText}" Value="">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding PaperEventsSearchText}" Value="{x:Null}">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBox Text="{Binding PaperEventsSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                                 BorderThickness="0"
+                                                 Background="Transparent"
+                                                 Padding="0"
+                                                 FontSize="11"
+                                                 VerticalAlignment="Center"/>
+                                    </Grid>
+                                </DockPanel>
+                            </Border>
+                        </DockPanel>
+
+                        <DataGrid Grid.Row="5"
                                   ItemsSource="{Binding PaperEvents}"
                                   AutoGenerateColumns="False"
                                   IsReadOnly="True"
-                                  Margin="0,0,0,8">
+                                  Margin="0,0,0,6">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Out of paper at"
                                                     Binding="{Binding Time, StringFormat=dd/MM HH:mm}"
@@ -546,7 +693,79 @@
                             </DataGrid.Columns>
                         </DataGrid>
 
-                        <DataGrid Grid.Row="4"
+                        <!-- Row 6: Jobs Header & Search -->
+                        <DockPanel Grid.Row="6" Margin="0,6,0,4" LastChildFill="False">
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                                <TextBlock Text="📋 Print Job History" FontWeight="Bold" FontSize="12" Foreground="#333333" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding JobsSummary, StringFormat='({0})'}" FontSize="11" Foreground="#666666" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <Border DockPanel.Dock="Right"
+                                    Background="White"
+                                    BorderBrush="#D1D5DB"
+                                    BorderThickness="1"
+                                    CornerRadius="3"
+                                    Padding="6,2"
+                                    Width="260"
+                                    VerticalAlignment="Center">
+                                <DockPanel LastChildFill="True">
+                                    <TextBlock Text="🔍" FontSize="10" Foreground="#888888" VerticalAlignment="Center" Margin="0,0,4,0" DockPanel.Dock="Left"/>
+                                    <Button DockPanel.Dock="Right"
+                                            Content="✕"
+                                            Command="{Binding ClearJobsSearchCommand}"
+                                            ToolTip="Clear search"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Foreground="#888888"
+                                            Padding="3,0"
+                                            Cursor="Hand"
+                                            FontSize="10">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding JobsSearchText}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding JobsSearchText}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Grid VerticalAlignment="Center">
+                                        <TextBlock Text="Search jobs (number, file, user, result)..."
+                                                   Foreground="#9CA3AF"
+                                                   FontSize="11"
+                                                   VerticalAlignment="Center"
+                                                   IsHitTestVisible="False">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding JobsSearchText}" Value="">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding JobsSearchText}" Value="{x:Null}">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBox Text="{Binding JobsSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                                 BorderThickness="0"
+                                                 Background="Transparent"
+                                                 Padding="0"
+                                                 FontSize="11"
+                                                 VerticalAlignment="Center"/>
+                                    </Grid>
+                                </DockPanel>
+                            </Border>
+                        </DockPanel>
+
+                        <DataGrid Grid.Row="7"
                                   ItemsSource="{Binding Jobs}"
                                   AutoGenerateColumns="False"
                                   IsReadOnly="True">
@@ -578,7 +797,7 @@
                             </DataGrid.Columns>
                         </DataGrid>
 
-                        <TextBlock Grid.Row="5"
+                        <TextBlock Grid.Row="8"
                                    Text="{Binding Status}"
                                    Margin="0,8,0,0"
                                    TextWrapping="Wrap"/>

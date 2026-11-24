@@ -33,6 +33,11 @@ A lightweight WPF desktop utility built with .NET 10 to monitor, manage, and aud
 - **Usage Statistics**: Computes and highlights top users by total printed pages over a configurable number of days.
 - **Local Persistence**: Stores job history in a local SQLite database (`%LOCALAPPDATA%\iPrinterTool\printlog.db`) using Entity Framework Core.
 - **Automatic Polling**: Periodically syncs new print jobs in the background.
+- **Instant Grid Search**: Dedicated real-time search boxes for each DataGrid:
+  - **Top Users**: Search by username or page count.
+  - **Out of Paper Events**: Search by user, file name, or timestamp.
+  - **Print Job History**: Search by job number, file name, user, result status, or error code.
+  - Includes clear buttons (`✕`), live match counts, and watermark hints.
 
 ### 4. SNMP Status & Out-of-Paper Tracking
 

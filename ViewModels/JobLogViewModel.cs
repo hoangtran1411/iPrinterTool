@@ -17,6 +17,10 @@ public partial class JobLogViewModel : ObservableObject
     private bool _checking;
     private bool? _wasOutOfPaper;
 
+    private readonly List<JobRecord> _allJobs = new();
+    private readonly List<UserStat> _allStats = new();
+    private readonly List<PaperEvent> _allPaperEvents = new();
+
     public ObservableCollection<JobRecord> Jobs { get; } = new();
     public ObservableCollection<UserStat> Stats { get; } = new();
     public ObservableCollection<PaperEvent> PaperEvents { get; } = new();
@@ -25,6 +29,14 @@ public partial class JobLogViewModel : ObservableObject
     [ObservableProperty] private string _lastPrint = "";
     [ObservableProperty] private string _status = "";
     [ObservableProperty] private string _printerState = "Checking...";
+
+    [ObservableProperty] private string _statsSearchText = "";
+    [ObservableProperty] private string _paperEventsSearchText = "";
+    [ObservableProperty] private string _jobsSearchText = "";
+
+    [ObservableProperty] private string _statsSummary = "0 users";
+    [ObservableProperty] private string _paperEventsSummary = "0 events";
+    [ObservableProperty] private string _jobsSummary = "0 jobs";
 
     public JobLogViewModel(JobLogService service, CanonSnmpClient snmp)
     {
@@ -135,20 +147,125 @@ public partial class JobLogViewModel : ObservableObject
             var last = await _service.GetLastPrinterJobAsync();
             var events = await _service.GetPaperEventsAsync();
 
-            Jobs.Clear();
-            foreach (var j in jobs) Jobs.Add(j);
+            _allJobs.Clear();
+            _allJobs.AddRange(jobs);
 
-            Stats.Clear();
-            foreach (var s in stats) Stats.Add(s);
+            _allStats.Clear();
+            _allStats.AddRange(stats);
 
-            PaperEvents.Clear();
-            foreach (var e in events) PaperEvents.Add(e);
+            _allPaperEvents.Clear();
+            _allPaperEvents.AddRange(events);
+
+            ApplyStatsFilter();
+            ApplyPaperEventsFilter();
+            ApplyJobsFilter();
 
             LastPrint = last is null
                 ? "No print job yet"
                 : $"{last.UserName} - {last.FileName} ({last.OutputPages} pages) at {last.Start:dd/MM HH:mm}";
         }
-        catch (Exception ex) { Status = $"Load failed: {ex.Message}"; }
+        catch (Exception ex)
+        {
+            Status = $"Load failed: {ex.Message}";
+            AppLogger.Error("Failed to load records from local database", ex);
+        }
+    }
+
+    partial void OnStatsSearchTextChanged(string value) => ApplyStatsFilter();
+    partial void OnPaperEventsSearchTextChanged(string value) => ApplyPaperEventsFilter();
+    partial void OnJobsSearchTextChanged(string value) => ApplyJobsFilter();
+
+    [RelayCommand]
+    private void ClearStatsSearch() => StatsSearchText = "";
+
+    [RelayCommand]
+    private void ClearPaperEventsSearch() => PaperEventsSearchText = "";
+
+    [RelayCommand]
+    private void ClearJobsSearch() => JobsSearchText = "";
+
+    public void ApplyStatsFilter()
+    {
+        RunOnDispatcher(() =>
+        {
+            var query = StatsSearchText?.Trim() ?? "";
+            var filtered = string.IsNullOrWhiteSpace(query)
+                ? _allStats
+                : _allStats.Where(s =>
+                    (!string.IsNullOrEmpty(s.UserName) && s.UserName.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    s.Jobs.ToString().Contains(query) ||
+                    s.Pages.ToString().Contains(query)).ToList();
+
+            Stats.Clear();
+            foreach (var s in filtered) Stats.Add(s);
+
+            StatsSummary = string.IsNullOrWhiteSpace(query)
+                ? $"{_allStats.Count} user(s)"
+                : $"{Stats.Count}/{_allStats.Count} found";
+        });
+    }
+
+    public void ApplyPaperEventsFilter()
+    {
+        RunOnDispatcher(() =>
+        {
+            var query = PaperEventsSearchText?.Trim() ?? "";
+            var filtered = string.IsNullOrWhiteSpace(query)
+                ? _allPaperEvents
+                : _allPaperEvents.Where(e =>
+                    (!string.IsNullOrEmpty(e.LastUser) && e.LastUser.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(e.LastFile) && e.LastFile.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(e.TopUser3h) && e.TopUser3h.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    e.LastPages.ToString().Contains(query) ||
+                    e.TopPages3h.ToString().Contains(query) ||
+                    e.Time.ToString("dd/MM HH:mm").Contains(query)).ToList();
+
+            PaperEvents.Clear();
+            foreach (var e in filtered) PaperEvents.Add(e);
+
+            PaperEventsSummary = string.IsNullOrWhiteSpace(query)
+                ? $"{_allPaperEvents.Count} event(s)"
+                : $"{PaperEvents.Count}/{_allPaperEvents.Count} found";
+        });
+    }
+
+    public void ApplyJobsFilter()
+    {
+        RunOnDispatcher(() =>
+        {
+            var query = JobsSearchText?.Trim() ?? "";
+            var filtered = string.IsNullOrWhiteSpace(query)
+                ? _allJobs
+                : _allJobs.Where(j =>
+                    (!string.IsNullOrEmpty(j.JobNumber) && j.JobNumber.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(j.FileName) && j.FileName.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(j.UserName) && j.UserName.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(j.Result) && j.Result.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(j.JobType) && j.JobType.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(j.ErrorCode) && j.ErrorCode.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    j.OutputPages.ToString().Contains(query) ||
+                    j.Start.ToString("dd/MM HH:mm").Contains(query)).ToList();
+
+            Jobs.Clear();
+            foreach (var j in filtered) Jobs.Add(j);
+
+            JobsSummary = string.IsNullOrWhiteSpace(query)
+                ? $"{_allJobs.Count} job(s)"
+                : $"{Jobs.Count}/{_allJobs.Count} found";
+        });
+    }
+
+    private static void RunOnDispatcher(Action action)
+    {
+        var app = System.Windows.Application.Current;
+        if (app != null && !app.Dispatcher.CheckAccess())
+        {
+            app.Dispatcher.Invoke(action);
+        }
+        else
+        {
+            action();
+        }
     }
 
     partial void OnDaysChanged(int value)

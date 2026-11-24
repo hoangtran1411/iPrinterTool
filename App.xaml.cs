@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Windows;
+using iPrinterTool.Data;
 using iPrinterTool.Services;
 using iPrinterTool.ViewModels;
 
@@ -121,7 +122,64 @@ public partial class App : Application
                 var scanResults = await scanner.ScanAsync(new[] { IPAddress.Loopback }, null, cts.Token);
                 Console.WriteLine($"Loopback scan completed without error. Found {scanResults.Count} printer(s).");
 
-                Console.WriteLine("ALL SELF-TESTS PASSED (SCANNER & LOGGER)!");
+                // 6. Test JobLogViewModel Grid Searches
+                var jobLogVm = new JobLogViewModel(
+                    new JobLogService(new CanonJobLogClient(new CanonSession("10.90.39.20"))),
+                    new CanonSnmpClient("10.90.39.20"));
+
+                // Test Stats Search
+                typeof(JobLogViewModel).GetField("_allStats", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                    .SetValue(jobLogVm, new List<UserStat>
+                    {
+                        new("Alice", 5, 20),
+                        new("Bob", 2, 8),
+                        new("Charlie", 10, 50)
+                    });
+                jobLogVm.ApplyStatsFilter();
+                if (jobLogVm.Stats.Count != 3) throw new Exception("Stats initial filter failed!");
+
+                jobLogVm.StatsSearchText = "Alice";
+                if (jobLogVm.Stats.Count != 1 || jobLogVm.Stats[0].UserName != "Alice")
+                    throw new Exception("Stats search 'Alice' failed!");
+
+                jobLogVm.ClearStatsSearchCommand.Execute(null);
+                if (jobLogVm.Stats.Count != 3) throw new Exception("ClearStatsSearch failed!");
+
+                // Test PaperEvents Search
+                typeof(JobLogViewModel).GetField("_allPaperEvents", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                    .SetValue(jobLogVm, new List<PaperEvent>
+                    {
+                        new() { LastUser = "Alice", LastFile = "Contract.pdf", Time = DateTime.Now },
+                        new() { LastUser = "Bob", LastFile = "Photo.jpg", Time = DateTime.Now }
+                    });
+                jobLogVm.ApplyPaperEventsFilter();
+                if (jobLogVm.PaperEvents.Count != 2) throw new Exception("PaperEvents initial filter failed!");
+
+                jobLogVm.PaperEventsSearchText = "Contract";
+                if (jobLogVm.PaperEvents.Count != 1 || jobLogVm.PaperEvents[0].LastUser != "Alice")
+                    throw new Exception("PaperEvents search 'Contract' failed!");
+
+                jobLogVm.ClearPaperEventsSearchCommand.Execute(null);
+                if (jobLogVm.PaperEvents.Count != 2) throw new Exception("ClearPaperEventsSearch failed!");
+
+                // Test Jobs Search
+                typeof(JobLogViewModel).GetField("_allJobs", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                    .SetValue(jobLogVm, new List<JobRecord>
+                    {
+                        new() { JobNumber = "001", FileName = "Report.pdf", UserName = "Alice", Result = "OK" },
+                        new() { JobNumber = "002", FileName = "Invoice.pdf", UserName = "Bob", Result = "NG" }
+                    });
+                jobLogVm.ApplyJobsFilter();
+                if (jobLogVm.Jobs.Count != 2) throw new Exception("Jobs initial filter failed!");
+
+                jobLogVm.JobsSearchText = "Invoice";
+                if (jobLogVm.Jobs.Count != 1 || jobLogVm.Jobs[0].FileName != "Invoice.pdf")
+                    throw new Exception("Jobs search 'Invoice' failed!");
+
+                jobLogVm.ClearJobsSearchCommand.Execute(null);
+                if (jobLogVm.Jobs.Count != 2) throw new Exception("ClearJobsSearch failed!");
+
+                Console.WriteLine("ALL SELF-TESTS PASSED (SCANNER, LOGGER & GRID SEARCHES)!");
                 Environment.ExitCode = 0;
             }
             catch (Exception ex)
