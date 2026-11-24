@@ -17,6 +17,9 @@ public partial class MainViewModel : ObservableObject
     private CanonPaperClient _client = null!;
 
     public JobLogViewModel JobLog { get; }
+    public PrinterScannerViewModel Scanner { get; }
+
+    [ObservableProperty] private bool _isSidebarExpanded = true;
 
     [ObservableProperty] private string _printerIp = "";
     [ObservableProperty] private string _activeIpDisplay = "None";
@@ -42,6 +45,15 @@ public partial class MainViewModel : ObservableObject
         JobLog = new JobLogViewModel(
             new JobLogService(new CanonJobLogClient(_session)),
             new CanonSnmpClient(ip));
+
+        Scanner = new PrinterScannerViewModel();
+        Scanner.RefreshSubnets(ip);
+        Scanner.UpdateActiveIp(ip);
+        Scanner.PrinterSelected += selectedIp =>
+        {
+            PrinterIp = selectedIp;
+            _ = ConnectAsync();
+        };
     }
 
     private static string LoadSavedIp()
@@ -95,6 +107,8 @@ public partial class MainViewModel : ObservableObject
 
             _activeIp = ip;
             ActiveIpDisplay = ip;
+            Scanner.UpdateActiveIp(ip);
+            Scanner.RefreshSubnets(ip);
 
             if (save)
             {
@@ -133,6 +147,12 @@ public partial class MainViewModel : ObservableObject
         try { Apply(await action()); }
         catch (Exception ex) { Status = ex.Message; }
         finally { IsBusy = false; }
+    }
+
+    [RelayCommand]
+    private void ToggleSidebar()
+    {
+        IsSidebarExpanded = !IsSidebarExpanded;
     }
 
     [RelayCommand(CanExecute = nameof(CanRun))]

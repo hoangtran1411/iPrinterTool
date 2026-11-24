@@ -12,21 +12,29 @@ A lightweight WPF desktop utility built with .NET 10 to monitor, manage, and aud
 
 ## Features
 
-### 1. Paper Tray Configuration
+### 1. Network Printer Scanner Sidebar
+
+- **Subnet & IP Range Scanning**: Automatically detects active local network interfaces (Ethernet, Wi-Fi, etc.) and offers an editable input for custom subnets (e.g., `10.90.39.0/24`, `192.168.1.*`, `10.14.12.1-50`).
+- **Multi-Protocol Discovery**: Probes port 9100 (RAW JetDirect), 631 (IPP), 515 (LPR), 80 (Remote UI), and 161 (SNMP) concurrently.
+- **Model & Vendor Identification**: Uses SNMP `sysDescr`/`sysName` and HTTP title inspection to automatically recognize printer models and highlight Canon devices.
+- **Quick Connect**: Click "Connect" on any discovered printer card to instantly switch the active printer and synchronize data.
+- **Collapsible Sidebar**: Easily collapse or expand the scanner sidebar via the toggle button or top bar shortcut.
+
+### 2. Paper Tray Configuration
 
 - **Quick Tray Switching**: Rapidly check and toggle paper tray sizes between **A4** and **Free Size** for:
   - Multi-Purpose Tray
   - Drawer 1
 - **Remote UI Integration**: Interacts directly with the printer's embedded web management interface (Remote UI).
 
-### 2. Print Job History & Analytics
+### 3. Print Job History & Analytics
 
 - **Job Synchronization**: Fetches detailed print job records (job number, file name, user, page count, copies, completion status).
 - **Usage Statistics**: Computes and highlights top users by total printed pages over a configurable number of days.
 - **Local Persistence**: Stores job history in a local SQLite database (`%LOCALAPPDATA%\iPrinterTool\printlog.db`) using Entity Framework Core.
 - **Automatic Polling**: Periodically syncs new print jobs in the background.
 
-### 3. SNMP Status & Out-of-Paper Tracking
+### 4. SNMP Status & Out-of-Paper Tracking
 
 - **Hardware State Monitoring**: Periodically checks printer health via SNMP (`hrPrinterDetectedErrorState`, RFC 2790), reporting states such as:
   - Out of paper / Low paper

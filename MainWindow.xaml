@@ -1,229 +1,541 @@
 ﻿<Window x:Class="iPrinterTool.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:iPrinterTool.ViewModels"
+        xmlns:converters="clr-namespace:iPrinterTool.Converters"
         Title="iPrinterTool"
-        Width="920"
-        Height="620"
+        Width="1160"
+        Height="680"
+        MinWidth="880"
+        MinHeight="550"
         WindowStartupLocation="CenterScreen">
-        <Grid Margin="10">
-                <Grid.RowDefinitions>
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <converters:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis"/>
+        <converters:InverseBooleanConverter x:Key="InverseBool"/>
+
+        <!-- Template for Discovered Printer Item -->
+        <DataTemplate DataType="{x:Type vm:DiscoveredPrinterItemViewModel}">
+            <Border Margin="0,0,0,6"
+                    Padding="8,6"
+                    CornerRadius="4"
+                    BorderThickness="1">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background" Value="White"/>
+                        <Setter Property="BorderBrush" Value="#E0E0E0"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                <Setter Property="Background" Value="#F0FDF4"/>
+                                <Setter Property="BorderBrush" Value="#107C41"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <Grid>
+                    <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Row 0: Vendor badge + Name + Active indicator -->
+                    <DockPanel Grid.Row="0" LastChildFill="True">
+                        <!-- Active badge -->
+                        <Border DockPanel.Dock="Right"
+                                Visibility="{Binding IsActive, Converter={StaticResource BoolToVis}}"
+                                Background="#DCFCE7"
+                                BorderBrush="#107C41"
+                                BorderThickness="1"
+                                CornerRadius="3"
+                                Padding="5,1"
+                                Margin="4,0,0,0">
+                            <TextBlock Text="Active" FontSize="10" FontWeight="Bold" Foreground="#107C41"/>
+                        </Border>
+
+                        <!-- Vendor badge -->
+                        <Border DockPanel.Dock="Left"
+                                CornerRadius="3"
+                                Padding="5,1"
+                                Margin="0,0,6,0">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Background" Value="#E9ECEF"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCanon}" Value="True">
+                                            <Setter Property="Background" Value="#C00000"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <TextBlock Text="{Binding Vendor}" FontSize="10" FontWeight="Bold">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="#495057"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCanon}" Value="True">
+                                                <Setter Property="Foreground" Value="White"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Border>
+
+                        <!-- Printer Model / Name -->
+                        <TextBlock Text="{Binding Name}"
+                                   FontWeight="SemiBold"
+                                   FontSize="12"
+                                   TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center"
+                                   ToolTip="{Binding Description}"/>
+                    </DockPanel>
+
+                    <!-- Row 1: IP address and Response Time -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,4,0,2">
+                        <TextBlock Text="{Binding IpAddress}"
+                                   FontWeight="SemiBold"
+                                   FontSize="11"
+                                   Foreground="#212529"
+                                   FontFamily="Consolas, Segoe UI"/>
+                        <TextBlock Text="•" Foreground="#ADB5BD" Margin="6,0"/>
+                        <TextBlock Text="{Binding ResponseTimeDisplay}"
+                                   FontSize="10"
+                                   Foreground="#6C757D"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Row 2: Open Ports and Connect Button -->
+                    <DockPanel Grid.Row="2" Margin="0,2,0,0" LastChildFill="False">
+                        <TextBlock DockPanel.Dock="Left"
+                                   Text="{Binding PortsDescription, StringFormat='Ports: {0}'}"
+                                   FontSize="10"
+                                   Foreground="#6C757D"
+                                   VerticalAlignment="Center"/>
+                        <Button DockPanel.Dock="Right"
+                                Content="Connect"
+                                Command="{Binding DataContext.Scanner.SelectPrinterCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="{Binding}"
+                                Padding="8,2"
+                                FontSize="11"
+                                FontWeight="SemiBold">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                            <Setter Property="Content" Value="Connected"/>
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </DockPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid Margin="10">
+        <Grid.ColumnDefinitions>
+            <!-- Column 0: Sidebar -->
+            <ColumnDefinition Width="Auto"/>
+            <!-- Column 1: Main Content -->
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ================= SIDEBAR (SCAN PRINTER) ================= -->
+        <Border Grid.Column="0"
+                Margin="0,0,10,0"
+                Background="#F8F9FA"
+                BorderBrush="#E0E0E0"
+                BorderThickness="1"
+                CornerRadius="4">
+
+            <!-- SIDEBAR EXPANDED -->
+            <Grid Width="310" Margin="10"
+                  Visibility="{Binding IsSidebarExpanded, Converter={StaticResource BoolToVis}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/> <!-- Header -->
+                    <RowDefinition Height="Auto"/> <!-- Controls -->
+                    <RowDefinition Height="*"/>    <!-- Printer List -->
+                    <RowDefinition Height="Auto"/> <!-- Footer / Summary -->
                 </Grid.RowDefinitions>
 
-                <!-- Top Bar: Printer IP Configuration -->
-                <Border Grid.Row="0" Margin="0,0,0,10" Padding="12,8" Background="#F8F9FA" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4">
-                        <DockPanel LastChildFill="False">
-                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
-                                        <TextBlock Text="Printer IP:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                        <TextBox Text="{Binding PrinterIp, UpdateSourceTrigger=PropertyChanged}"
-                                                 Width="160"
-                                                 Padding="6,3"
-                                                 VerticalAlignment="Center">
-                                                <TextBox.InputBindings>
-                                                        <KeyBinding Key="Return" Command="{Binding ConnectCommand}"/>
-                                                </TextBox.InputBindings>
-                                        </TextBox>
-                                        <Button Content="Connect"
-                                                Command="{Binding ConnectCommand}"
-                                                Padding="12,4"
-                                                Margin="8,0,0,0"
-                                                FontWeight="SemiBold"
-                                                VerticalAlignment="Center"/>
-                                </StackPanel>
+                <!-- Sidebar Header -->
+                <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                        <TextBlock Text="🖨️" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Network Printers" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <Button DockPanel.Dock="Right"
+                            Content="◀"
+                            Command="{Binding ToggleSidebarCommand}"
+                            ToolTip="Collapse sidebar"
+                            Width="26" Height="24"
+                            Padding="0"
+                            FontWeight="Bold"
+                            VerticalAlignment="Center"/>
+                </DockPanel>
 
-                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
-                                        <TextBlock Text="Active:" Foreground="#666666" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="{Binding ActiveIpDisplay}" FontWeight="Bold" Foreground="#107C41" VerticalAlignment="Center"/>
-                                </StackPanel>
-                        </DockPanel>
+                <!-- Subnet Range & Scan Controls -->
+                <StackPanel Grid.Row="1" Margin="0,0,0,8">
+                    <TextBlock Text="Subnet / IP Range:"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               Foreground="#495057"
+                               Margin="0,0,0,4"/>
+                    <ComboBox ItemsSource="{Binding Scanner.SubnetList}"
+                              SelectedItem="{Binding Scanner.SelectedSubnet}"
+                              Text="{Binding Scanner.SelectedSubnet, UpdateSourceTrigger=PropertyChanged}"
+                              IsEditable="True"
+                              Padding="6,4"
+                              Margin="0,0,0,8"
+                              ToolTip="Select an active local subnet or type custom IP range (e.g. 10.90.39.0/24 or 192.168.1.*)"/>
+
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Button Grid.Column="0"
+                                Content="🔍 Scan Network"
+                                Command="{Binding Scanner.StartScanCommand}"
+                                IsEnabled="{Binding Scanner.IsScanning, Converter={StaticResource InverseBool}}"
+                                FontWeight="SemiBold"
+                                Padding="10,5"/>
+
+                        <Button Grid.Column="1"
+                                Content="Stop"
+                                Command="{Binding Scanner.CancelScanCommand}"
+                                Visibility="{Binding Scanner.IsScanning, Converter={StaticResource BoolToVis}}"
+                                Margin="6,0,0,0"
+                                Padding="10,5"
+                                Foreground="#D32F2F"
+                                FontWeight="SemiBold"/>
+                    </Grid>
+
+                    <!-- Progress Bar (while scanning) -->
+                    <ProgressBar Height="4"
+                                 Value="{Binding Scanner.ProgressPercent}"
+                                 Maximum="100"
+                                 Margin="0,2,0,4"
+                                 Visibility="{Binding Scanner.IsScanning, Converter={StaticResource BoolToVis}}"/>
+
+                    <!-- Status Text -->
+                    <TextBlock Text="{Binding Scanner.StatusText}"
+                               FontSize="11"
+                               Foreground="#6C757D"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,4"/>
+                </StackPanel>
+
+                <!-- Discovered Printers List -->
+                <ListBox Grid.Row="2"
+                         ItemsSource="{Binding Scanner.DiscoveredPrinters}"
+                         SelectedItem="{Binding Scanner.SelectedPrinter}"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="Padding" Value="0"/>
+                            <Setter Property="Margin" Value="0"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <ContentPresenter/>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                </ListBox>
+
+                <!-- Footer Summary -->
+                <Border Grid.Row="3"
+                        Margin="0,6,0,0"
+                        Padding="4,6"
+                        BorderBrush="#E9ECEF"
+                        BorderThickness="0,1,0,0">
+                    <TextBlock Text="{Binding Scanner.SummaryText}"
+                               FontSize="11"
+                               Foreground="#6C757D"
+                               HorizontalAlignment="Center"/>
                 </Border>
+            </Grid>
+        </Border>
 
-                <TabControl Grid.Row="1">
+        <!-- SIDEBAR COLLAPSED STRIP -->
+        <Border Grid.Column="0"
+                Margin="0,0,10,0"
+                Background="#F8F9FA"
+                BorderBrush="#E0E0E0"
+                BorderThickness="1"
+                CornerRadius="4"
+                Width="38"
+                Visibility="{Binding IsSidebarExpanded, Converter={StaticResource InverseBoolToVis}}">
+            <StackPanel HorizontalAlignment="Center" Margin="0,8,0,0">
+                <Button Content="▶"
+                        Command="{Binding ToggleSidebarCommand}"
+                        ToolTip="Expand printer scanner sidebar"
+                        Width="26" Height="24"
+                        Padding="0"
+                        FontWeight="Bold"/>
+                <Button Command="{Binding ToggleSidebarCommand}"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        ToolTip="Expand printer scanner sidebar"
+                        Margin="0,16,0,0">
+                    <TextBlock Text="PRINTER SCANNER"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               Foreground="#495057">
+                        <TextBlock.LayoutTransform>
+                            <RotateTransform Angle="90"/>
+                        </TextBlock.LayoutTransform>
+                    </TextBlock>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <!-- ================= MAIN CONTENT ================= -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Top Bar: Printer IP Configuration -->
+            <Border Grid.Row="0" Margin="0,0,0,10" Padding="12,8" Background="#F8F9FA" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4">
+                <DockPanel LastChildFill="False">
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                        <!-- Sidebar Toggle Shortcut in Top Bar -->
+                        <Button Command="{Binding ToggleSidebarCommand}"
+                                Padding="8,4"
+                                Margin="0,0,12,0"
+                                ToolTip="Toggle printer scanner sidebar">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🖨️" Margin="0,0,4,0"/>
+                                <TextBlock Text="Scanner" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+
+                        <TextBlock Text="Printer IP:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBox Text="{Binding PrinterIp, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="160"
+                                 Padding="6,3"
+                                 VerticalAlignment="Center">
+                            <TextBox.InputBindings>
+                                <KeyBinding Key="Return" Command="{Binding ConnectCommand}"/>
+                            </TextBox.InputBindings>
+                        </TextBox>
+                        <Button Content="Connect"
+                                Command="{Binding ConnectCommand}"
+                                Padding="12,4"
+                                Margin="8,0,0,0"
+                                FontWeight="SemiBold"
+                                VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+                        <TextBlock Text="Active:" Foreground="#666666" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding ActiveIpDisplay}" FontWeight="Bold" Foreground="#107C41" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <TabControl Grid.Row="1">
 
                 <TabItem Header="Paper">
-                        <Grid Margin="16">
-                                <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="140"/>
-                                        <ColumnDefinition Width="110"/>
-                                        <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
+                    <Grid Margin="16">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="110"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                                <TextBlock Grid.Row="0"
-                                                Text="Multi-Purpose Tray"
-                                                VerticalAlignment="Center"/>
-                                <TextBlock Grid.Row="0"
-                                                Grid.Column="1"
-                                                Text="{Binding MpSize}"
-                                                FontWeight="Bold"
-                                                VerticalAlignment="Center"/>
-                                <Button Grid.Row="0"
-                                                Grid.Column="2"
-                                                Content="{Binding MpButtonText}"
-                                        Command="{Binding ToggleMpCommand}"
-                                                Padding="8,4"
-                                                Margin="0,0,0,8"/>
+                        <TextBlock Grid.Row="0"
+                                   Text="Multi-Purpose Tray"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="0"
+                                   Grid.Column="1"
+                                   Text="{Binding MpSize}"
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center"/>
+                        <Button Grid.Row="0"
+                                Grid.Column="2"
+                                Content="{Binding MpButtonText}"
+                                Command="{Binding ToggleMpCommand}"
+                                Padding="8,4"
+                                Margin="0,0,0,8"/>
 
-                                <TextBlock Grid.Row="1"
-                                                Text="Drawer 1"
-                                                VerticalAlignment="Center"/>
-                                <TextBlock Grid.Row="1"
-                                                Grid.Column="1"
-                                                Text="{Binding DrawerSize}"
-                                                FontWeight="Bold"
-                                                VerticalAlignment="Center"/>
-                                <Button Grid.Row="1"
-                                                Grid.Column="2"
-                                                Content="{Binding DrawerButtonText}"
-                                        Command="{Binding ToggleDrawerCommand}"
-                                                Padding="8,4"
-                                                Margin="0,0,0,8"/>
+                        <TextBlock Grid.Row="1"
+                                   Text="Drawer 1"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="1"
+                                   Grid.Column="1"
+                                   Text="{Binding DrawerSize}"
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center"/>
+                        <Button Grid.Row="1"
+                                Grid.Column="2"
+                                Content="{Binding DrawerButtonText}"
+                                Command="{Binding ToggleDrawerCommand}"
+                                Padding="8,4"
+                                Margin="0,0,0,8"/>
 
-                                <Button Grid.Row="2"
-                                                Grid.ColumnSpan="3"
-                                                Content="Refresh"
-                                        Command="{Binding RefreshCommand}"
-                                                Padding="8,4"
-                                                HorizontalAlignment="Left"/>
+                        <Button Grid.Row="2"
+                                Grid.ColumnSpan="3"
+                                Content="Refresh"
+                                Command="{Binding RefreshCommand}"
+                                Padding="8,4"
+                                HorizontalAlignment="Left"/>
 
-                                <TextBlock Grid.Row="3"
-                                                Grid.ColumnSpan="3"
-                                                Text="{Binding Status}"
-                                           Foreground="Firebrick"
-                                                TextWrapping="Wrap"
-                                                Margin="0,8,0,0"/>
-                        </Grid>
+                        <TextBlock Grid.Row="3"
+                                   Grid.ColumnSpan="3"
+                                   Text="{Binding Status}"
+                                   Foreground="Firebrick"
+                                   TextWrapping="Wrap"
+                                   Margin="0,8,0,0"/>
+                    </Grid>
                 </TabItem>
 
                 <TabItem Header="Job Log"
-                                DataContext="{Binding JobLog}">
-                        <Grid Margin="12">
-                                <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="130"/>
-                                        <RowDefinition Height="110"/>
-                                        <RowDefinition Height="*"/>
-                                        <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
+                         DataContext="{Binding JobLog}">
+                    <Grid Margin="12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="130"/>
+                            <RowDefinition Height="110"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-                                <StackPanel Orientation="Horizontal">
-                                        <Button Content="Sync now"
-                                                        Command="{Binding SyncCommand}"
-                                                        Padding="8,4"/>
-                                        <TextBlock Text="Top users in the last"
-                                                        Margin="16,0,6,0"
-                                                        VerticalAlignment="Center"/>
-                                        <TextBox Text="{Binding Days, UpdateSourceTrigger=LostFocus}"
-                                                        Width="40"
-                                                        VerticalAlignment="Center"/>
-                                        <TextBlock Text="days"
-                                                        Margin="6,0,0,0"
-                                                        VerticalAlignment="Center"/>
-                                </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Sync now"
+                                    Command="{Binding SyncCommand}"
+                                    Padding="8,4"/>
+                            <TextBlock Text="Top users in the last"
+                                       Margin="16,0,6,0"
+                                       VerticalAlignment="Center"/>
+                            <TextBox Text="{Binding Days, UpdateSourceTrigger=LostFocus}"
+                                     Width="40"
+                                     VerticalAlignment="Center"/>
+                            <TextBlock Text="days"
+                                       Margin="6,0,0,0"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
 
-                                <TextBlock Grid.Row="1"
-                                                Margin="0,8"
-                                                TextWrapping="Wrap">
-            <Run Text="Last print: "
-                                                        FontWeight="Bold"/>
-            <Run Text="{Binding LastPrint, Mode=OneWay}"/>
-            <LineBreak/>
-            <Run Text="Printer state: "
-                                                        FontWeight="Bold"/>
-            <Run Text="{Binding PrinterState, Mode=OneWay}"/>
-                                </TextBlock>
+                        <TextBlock Grid.Row="1"
+                                   Margin="0,8"
+                                   TextWrapping="Wrap">
+                            <Run Text="Last print: "
+                                 FontWeight="Bold"/>
+                            <Run Text="{Binding LastPrint, Mode=OneWay}"/>
+                            <LineBreak/>
+                            <Run Text="Printer state: "
+                                 FontWeight="Bold"/>
+                            <Run Text="{Binding PrinterState, Mode=OneWay}"/>
+                        </TextBlock>
 
-                                <DataGrid Grid.Row="2"
-                                                ItemsSource="{Binding Stats}"
-                                                AutoGenerateColumns="False"
-                                          IsReadOnly="True"
-                                                Margin="0,0,0,8">
-                                        <DataGrid.Columns>
-                                                <DataGridTextColumn Header="User"
-                                                                Binding="{Binding UserName}"
-                                                                Width="*"/>
-                                                <DataGridTextColumn Header="Jobs"
-                                                                Binding="{Binding Jobs}"
-                                                                Width="80"/>
-                                                <DataGridTextColumn Header="Pages"
-                                                                Binding="{Binding Pages}"
-                                                                Width="80"/>
-                                        </DataGrid.Columns>
-                                </DataGrid>
+                        <DataGrid Grid.Row="2"
+                                  ItemsSource="{Binding Stats}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  Margin="0,0,0,8">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="User"
+                                                    Binding="{Binding UserName}"
+                                                    Width="*"/>
+                                <DataGridTextColumn Header="Jobs"
+                                                    Binding="{Binding Jobs}"
+                                                    Width="80"/>
+                                <DataGridTextColumn Header="Pages"
+                                                    Binding="{Binding Pages}"
+                                                    Width="80"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
 
-                                <DataGrid Grid.Row="3"
-                                                ItemsSource="{Binding PaperEvents}"
-                                                AutoGenerateColumns="False"
-                                          IsReadOnly="True"
-                                                Margin="0,0,0,8">
-                                        <DataGrid.Columns>
-                                                <DataGridTextColumn Header="Out of paper at"
-                                                                Binding="{Binding Time, StringFormat=dd/MM HH:mm}"
-                                                                Width="110"/>
-                                                <DataGridTextColumn Header="Last user"
-                                                                Binding="{Binding LastUser}"
-                                                                Width="150"/>
-                                                <DataGridTextColumn Header="Last file"
-                                                                Binding="{Binding LastFile}"
-                                                                Width="*"/>
-                                                <DataGridTextColumn Header="Pages"
-                                                                Binding="{Binding LastPages}"
-                                                                Width="55"/>
-                                                <DataGridTextColumn Header="Top user (3h)"
-                                                                Binding="{Binding TopUser3h}"
-                                                                Width="150"/>
-                                                <DataGridTextColumn Header="Pages"
-                                                                Binding="{Binding TopPages3h}"
-                                                                Width="55"/>
-                                        </DataGrid.Columns>
-                                </DataGrid>
+                        <DataGrid Grid.Row="3"
+                                  ItemsSource="{Binding PaperEvents}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  Margin="0,0,0,8">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Out of paper at"
+                                                    Binding="{Binding Time, StringFormat=dd/MM HH:mm}"
+                                                    Width="110"/>
+                                <DataGridTextColumn Header="Last user"
+                                                    Binding="{Binding LastUser}"
+                                                    Width="150"/>
+                                <DataGridTextColumn Header="Last file"
+                                                    Binding="{Binding LastFile}"
+                                                    Width="*"/>
+                                <DataGridTextColumn Header="Pages"
+                                                    Binding="{Binding LastPages}"
+                                                    Width="55"/>
+                                <DataGridTextColumn Header="Top user (3h)"
+                                                    Binding="{Binding TopUser3h}"
+                                                    Width="150"/>
+                                <DataGridTextColumn Header="Pages"
+                                                    Binding="{Binding TopPages3h}"
+                                                    Width="55"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
 
-                                <DataGrid Grid.Row="4"
-                                                ItemsSource="{Binding Jobs}"
-                                                AutoGenerateColumns="False"
-                                                IsReadOnly="True">
-                                        <DataGrid.Columns>
-                                                <DataGridTextColumn Header="Job #"
-                                                                Binding="{Binding JobNumber}"
-                                                                Width="60"/>
-                                                <DataGridTextColumn Header="Result"
-                                                                Binding="{Binding Result}"
-                                                                Width="60"/>
-                                                <DataGridTextColumn Header="Start"
-                                                                Binding="{Binding Start, StringFormat=dd/MM HH:mm}"
-                                                                Width="90"/>
-                                                <DataGridTextColumn Header="Type"
-                                                                Binding="{Binding JobType}"
-                                                                Width="65"/>
-                                                <DataGridTextColumn Header="File"
-                                                                Binding="{Binding FileName}"
-                                                                Width="*"/>
-                                                <DataGridTextColumn Header="User"
-                                                                Binding="{Binding UserName}"
-                                                                Width="180"/>
-                                                <DataGridTextColumn Header="Pages"
-                                                                Binding="{Binding OutputPages}"
-                                                                Width="55"/>
-                                                <DataGridTextColumn Header="Error"
-                                                                Binding="{Binding ErrorCode}"
-                                                                Width="55"/>
-                                        </DataGrid.Columns>
-                                </DataGrid>
+                        <DataGrid Grid.Row="4"
+                                  ItemsSource="{Binding Jobs}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Job #"
+                                                    Binding="{Binding JobNumber}"
+                                                    Width="60"/>
+                                <DataGridTextColumn Header="Result"
+                                                    Binding="{Binding Result}"
+                                                    Width="60"/>
+                                <DataGridTextColumn Header="Start"
+                                                    Binding="{Binding Start, StringFormat=dd/MM HH:mm}"
+                                                    Width="90"/>
+                                <DataGridTextColumn Header="Type"
+                                                    Binding="{Binding JobType}"
+                                                    Width="65"/>
+                                <DataGridTextColumn Header="File"
+                                                    Binding="{Binding FileName}"
+                                                    Width="*"/>
+                                <DataGridTextColumn Header="User"
+                                                    Binding="{Binding UserName}"
+                                                    Width="180"/>
+                                <DataGridTextColumn Header="Pages"
+                                                    Binding="{Binding OutputPages}"
+                                                    Width="55"/>
+                                <DataGridTextColumn Header="Error"
+                                                    Binding="{Binding ErrorCode}"
+                                                    Width="55"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
 
-                                <TextBlock Grid.Row="5"
-                                                Text="{Binding Status}"
-                                                Margin="0,8,0,0"
-                                                TextWrapping="Wrap"/>
-                        </Grid>
+                        <TextBlock Grid.Row="5"
+                                   Text="{Binding Status}"
+                                   Margin="0,8,0,0"
+                                   TextWrapping="Wrap"/>
+                    </Grid>
                 </TabItem>
 
-        </TabControl>
+            </TabControl>
         </Grid>
+    </Grid>
 </Window>
