@@ -3,7 +3,7 @@ using System.Net.Http;
 
 namespace iPrinterTool.Services;
 
-public sealed class CanonSession
+public sealed class CanonSession : IDisposable
 {
     private readonly SemaphoreSlim _loginLock = new(1, 1);
     private readonly CookieContainer _cookies = new();
@@ -65,6 +65,12 @@ public sealed class CanonSession
     }
 
     public void Invalidate() => _loggedIn = false;
+
+    public void Dispose()
+    {
+        _loginLock.Dispose();
+        Http.Dispose();
+    }
 
     public static bool IsSessionError(HttpResponseMessage resp) =>
         resp.RequestMessage?.RequestUri?.AbsolutePath.Contains("sessError", StringComparison.OrdinalIgnoreCase) == true;

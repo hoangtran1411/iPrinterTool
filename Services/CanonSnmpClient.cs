@@ -40,7 +40,17 @@ public sealed class CanonSnmpClient
     private readonly IPEndPoint _endpoint;
     private readonly OctetString _community = new("public");
 
-    public CanonSnmpClient(string ip) => _endpoint = new IPEndPoint(IPAddress.Parse(ip), 161);
+    public CanonSnmpClient(string ip)
+    {
+        if (!IPAddress.TryParse(ip, out var address))
+        {
+            var hosts = Dns.GetHostAddresses(ip);
+            address = hosts.FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                      ?? hosts.FirstOrDefault()
+                      ?? throw new InvalidOperationException($"Cannot resolve host: {ip}");
+        }
+        _endpoint = new IPEndPoint(address, 161);
+    }
 
     public async Task<PrinterState> GetStateAsync(CancellationToken ct = default)
     {

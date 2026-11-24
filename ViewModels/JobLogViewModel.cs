@@ -9,8 +9,8 @@ namespace iPrinterTool.ViewModels;
 
 public partial class JobLogViewModel : ObservableObject
 {
-    private readonly JobLogService _service;
-    private readonly CanonSnmpClient _snmp;
+    private JobLogService _service;
+    private CanonSnmpClient _snmp;
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMinutes(10) };
     private readonly DispatcherTimer _stateTimer = new() { Interval = TimeSpan.FromMinutes(1) };
     private bool _syncing;
@@ -32,6 +32,21 @@ public partial class JobLogViewModel : ObservableObject
         _snmp = snmp;
         _timer.Tick += async (_, _) => await SyncAndLoadAsync();
         _stateTimer.Tick += async (_, _) => await CheckPrinterAsync();
+    }
+
+    public void Configure(CanonSession session, string ip)
+    {
+        _service = new JobLogService(new CanonJobLogClient(session));
+        _snmp = new CanonSnmpClient(ip);
+        PrinterState = "Checking...";
+        Status = "";
+        _wasOutOfPaper = null;
+    }
+
+    public async Task RefreshAllAsync()
+    {
+        await SyncAndLoadAsync();
+        await CheckPrinterAsync();
     }
 
     public void Start()

@@ -2,10 +2,44 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="iPrinterTool"
-        Width="900"
-        Height="560"
+        Width="920"
+        Height="620"
         WindowStartupLocation="CenterScreen">
-        <TabControl Margin="8">
+        <Grid Margin="10">
+                <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Top Bar: Printer IP Configuration -->
+                <Border Grid.Row="0" Margin="0,0,0,10" Padding="12,8" Background="#F8F9FA" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4">
+                        <DockPanel LastChildFill="False">
+                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                                        <TextBlock Text="Printer IP:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBox Text="{Binding PrinterIp, UpdateSourceTrigger=PropertyChanged}"
+                                                 Width="160"
+                                                 Padding="6,3"
+                                                 VerticalAlignment="Center">
+                                                <TextBox.InputBindings>
+                                                        <KeyBinding Key="Return" Command="{Binding ConnectCommand}"/>
+                                                </TextBox.InputBindings>
+                                        </TextBox>
+                                        <Button Content="Connect"
+                                                Command="{Binding ConnectCommand}"
+                                                Padding="12,4"
+                                                Margin="8,0,0,0"
+                                                FontWeight="SemiBold"
+                                                VerticalAlignment="Center"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+                                        <TextBlock Text="Active:" Foreground="#666666" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding ActiveIpDisplay}" FontWeight="Bold" Foreground="#107C41" VerticalAlignment="Center"/>
+                                </StackPanel>
+                        </DockPanel>
+                </Border>
+
+                <TabControl Grid.Row="1">
 
                 <TabItem Header="Paper">
                         <Grid Margin="16">
@@ -191,4 +225,5 @@
                 </TabItem>
 
         </TabControl>
+        </Grid>
 </Window>
