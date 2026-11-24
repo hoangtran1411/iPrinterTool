@@ -89,12 +89,39 @@ public partial class App : Application
                     throw new Exception("SelectPrinterCommand did not fire PrinterSelected event!");
                 }
 
-                // 4. Test Probe host scan
+                // 4. Test AppLogger & AppLogViewModel
+                var logVm = new AppLogViewModel();
+                AppLogger.Clear();
+                AppLogger.Info("Test info message");
+                AppLogger.Warn("Test warning message");
+                AppLogger.Error("Test error message");
+
+                if (AppLogger.Entries.Count != 3)
+                {
+                    throw new Exception($"AppLogger failed to add entries. Count: {AppLogger.Entries.Count}");
+                }
+
+                var infoEntry = AppLogger.Entries[0];
+                var warnEntry = AppLogger.Entries[1];
+                var errorEntry = AppLogger.Entries[2];
+
+                if (infoEntry.LevelString != "[INFO]" || infoEntry.LevelColor != "#2ECC71")
+                    throw new Exception("AppLogger Info format/color mismatch!");
+                if (warnEntry.LevelString != "[WARN]" || warnEntry.LevelColor != "#F1C40F")
+                    throw new Exception("AppLogger Warn format/color mismatch!");
+                if (errorEntry.LevelString != "[ERROR]" || errorEntry.LevelColor != "#E74C3C")
+                    throw new Exception("AppLogger Error format/color mismatch!");
+
+                Console.WriteLine($"Sample log output: {infoEntry.FormattedLine}");
+                Console.WriteLine($"Sample log output: {warnEntry.FormattedLine}");
+                Console.WriteLine($"Sample log output: {errorEntry.FormattedLine}");
+
+                // 5. Test Probe host scan
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
                 var scanResults = await scanner.ScanAsync(new[] { IPAddress.Loopback }, null, cts.Token);
                 Console.WriteLine($"Loopback scan completed without error. Found {scanResults.Count} printer(s).");
 
-                Console.WriteLine("ALL SCANNER SELF-TESTS PASSED!");
+                Console.WriteLine("ALL SELF-TESTS PASSED (SCANNER & LOGGER)!");
                 Environment.ExitCode = 0;
             }
             catch (Exception ex)

@@ -84,6 +84,7 @@ public partial class PrinterScannerViewModel : ObservableObject
         StatusText = $"Scanning {ipList.Count} address(es)...";
         SummaryText = $"Scanning in progress (0/{ipList.Count})...";
         DiscoveredPrinters.Clear();
+        AppLogger.Info($"[Scanner] Starting scan on '{input}' ({ipList.Count} addresses)...");
 
         _scanCts?.Dispose();
         _scanCts = new CancellationTokenSource();
@@ -102,6 +103,7 @@ public partial class PrinterScannerViewModel : ObservableObject
                     var isCurrent = string.Equals(report.NewlyFound.IpAddress, _currentActiveIp, StringComparison.OrdinalIgnoreCase);
                     var itemVm = new DiscoveredPrinterItemViewModel(report.NewlyFound, isCurrent);
                     DiscoveredPrinters.Add(itemVm);
+                    AppLogger.Info($"[Scanner] Found printer at {report.NewlyFound.IpAddress}: {report.NewlyFound.Name} (Ports: {report.NewlyFound.PortsDescription}, Response: {report.NewlyFound.ResponseTimeMs}ms)");
                 }
 
                 StatusText = $"Scanned {report.Scanned}/{report.Total} IPs... Found {DiscoveredPrinters.Count}";
@@ -115,15 +117,18 @@ public partial class PrinterScannerViewModel : ObservableObject
             ProgressPercent = 100;
             StatusText = $"Scan finished. Found {results.Count} printer(s).";
             SummaryText = $"{results.Count} printer(s) found";
+            AppLogger.Info($"[Scanner] Scan finished. Total printers discovered: {results.Count}.");
         }
         catch (OperationCanceledException)
         {
             StatusText = "Scan cancelled.";
             SummaryText = $"Scan stopped. Found {DiscoveredPrinters.Count} printer(s).";
+            AppLogger.Warn($"[Scanner] Scan stopped by user. Found {DiscoveredPrinters.Count} printer(s).");
         }
         catch (Exception ex)
         {
             StatusText = $"Scan error: {ex.Message}";
+            AppLogger.Error("[Scanner] Scan failed", ex);
         }
         finally
         {
@@ -144,6 +149,7 @@ public partial class PrinterScannerViewModel : ObservableObject
     {
         if (printer == null) return;
         SelectedPrinter = printer;
+        AppLogger.Info($"[Scanner] Selected printer {printer.IpAddress} ({printer.Name})");
         PrinterSelected?.Invoke(printer.IpAddress);
     }
 }

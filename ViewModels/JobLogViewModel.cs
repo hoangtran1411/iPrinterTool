@@ -64,18 +64,37 @@ public partial class JobLogViewModel : ObservableObject
         try
         {
             var state = await _snmp.GetStateAsync();
-            PrinterState = $"{state.Describe()} - checked {DateTime.Now:HH:mm:ss}";
+            var desc = state.Describe();
+            PrinterState = $"{desc} - checked {DateTime.Now:HH:mm:ss}";
 
             var outNow = state.NoPaper;
             if (outNow && _wasOutOfPaper != true)
             {
+                AppLogger.Error($"Printer is OUT OF PAPER! ({desc})");
                 await SyncAndLoadAsync();            // lấy job mới nhất trước khi chụp
                 await _service.RecordPaperOutAsync();
                 await LoadAsync();
+                AppLogger.Warn("Recorded paper-out snapshot event to database.");
+            }
+            else if (outNow)
+            {
+                // Still out of paper
+            }
+            else if (desc.StartsWith("OK"))
+            {
+                // OK status
+            }
+            else
+            {
+                AppLogger.Warn($"Printer status alert: {desc}");
             }
             _wasOutOfPaper = outNow;
         }
-        catch (Exception ex) { PrinterState = $"SNMP failed: {ex.Message}"; }
+        catch (Exception ex)
+        {
+            PrinterState = $"SNMP failed: {ex.Message}";
+            AppLogger.Error("Printer SNMP status check failed", ex);
+        }
         finally { _checking = false; }
     }
 
@@ -85,10 +104,23 @@ public partial class JobLogViewModel : ObservableObject
         _syncing = true;
         try
         {
+            AppLogger.Info("Synchronizing print jobs from printer Remote UI...");
             var added = await _service.SyncAsync();
             Status = $"Synced {DateTime.Now:HH:mm:ss}: {added} new job(s)";
+            if (added > 0)
+            {
+                AppLogger.Info($"Sync complete: Recorded {added} new print job(s) in local database.");
+            }
+            else
+            {
+                AppLogger.Info("Sync complete: No new print jobs found.");
+            }
         }
-        catch (Exception ex) { Status = $"Sync failed: {ex.Message}"; }
+        catch (Exception ex)
+        {
+            Status = $"Sync failed: {ex.Message}";
+            AppLogger.Error("Print job synchronization failed", ex);
+        }
         finally { _syncing = false; }
 
         await LoadAsync();

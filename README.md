@@ -44,6 +44,15 @@ A lightweight WPF desktop utility built with .NET 10 to monitor, manage, and aud
   - Offline status
 - **Paper-Out Incident Auditing**: When paper runs out, iPrinterTool captures snapshot events recording the last user who printed and the heaviest user in the preceding 3 hours.
 
+### 5. Application Log (Command-Line Console)
+
+- **Terminal Theme UI**: Integrated bottom console with dark command-line theme (`#181818`), monospace typography (`Consolas`), and `[time][status] [description]` formatting.
+- **Level-Colored Indicators**:
+  - Green `[INFO]`: Normal operations, connections, tray changes, scan discoveries.
+  - Yellow `[WARN]`: Warnings (low paper, open doors, offline status, user cancellations).
+  - Red `[ERROR]`: Critical issues (out of paper, paper jams, network failures, exceptions).
+- **Interactive Controls**: Auto-scroll toggle, quick clipboard copy (`Copy`), log clearing (`Clear`), live counters (`🟢 Info`, `🟡 Warn`, `🔴 Error`), and collapsible / resizable splitter pane.
+
 ---
 
 ## Tech Stack & Architecture
